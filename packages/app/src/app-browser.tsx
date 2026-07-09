@@ -35,9 +35,9 @@ import { PromptProvider } from "@/context/prompt"
 import { SettingsProvider, useSettings } from "@/context/settings"
 import { TabsProvider } from "@/context/tabs"
 import { ServerProvider, ServerConnection } from "@/context/server"
-import { ServerSDKProvider } from "@/context/server-sdk"
-import { ServerSyncProvider } from "@/context/server-sync"
-import { GlobalProvider } from "@/context/global"
+import { BrowserGlobalProvider } from "@/context/browser-global"
+import { BrowserServerSDKProvider } from "@/context/browser-server-sdk"
+import { BrowserServerSyncProvider } from "@/context/browser-server-sync"
 
 import DirectoryLayout from "@/pages/directory-layout"
 import LegacyLayout from "@/pages/layout"
@@ -52,7 +52,7 @@ const NewSession = lazy(() => import("@/pages/new-session"))
 
 import { lazy } from "solid-js"
 
-const BROWSER_SERVER: ServerConnection.Http = {
+export const BROWSER_SERVER: ServerConnection.Http = {
   type: "http",
   authToken: undefined,
   http: { url: "browser-only" },
@@ -155,26 +155,28 @@ export function AppInterface(props: {
         defaultServer={ServerConnection.key(BROWSER_SERVER)}
         servers={[BROWSER_SERVER]}
       >
-        <GlobalProvider>
-          <ServerSDKProvider>
-            <ServerSyncProvider>
-              <Dynamic
-                component={props.router ?? Router}
-                root={(routerProps) => (
-                  <TabsProvider>
-                    <NotificationProvider>
-                      <QueryProvider>
-                        <SharedProviders>{routerProps.children}</SharedProviders>
-                      </QueryProvider>
-                    </NotificationProvider>
-                  </TabsProvider>
-                )}
-              >
-                <Routes />
-              </Dynamic>
-            </ServerSyncProvider>
-          </ServerSDKProvider>
-        </GlobalProvider>
+        <BrowserGlobalProvider>
+          <BrowserServerSDKProvider>
+            <BrowserServerSyncProvider>
+              <ServerScopedProviders>
+                <Dynamic
+                  component={props.router ?? Router}
+                  root={(routerProps) => (
+                    <TabsProvider>
+                      <NotificationProvider>
+                        <QueryProvider>
+                          <SharedProviders>{routerProps.children}</SharedProviders>
+                        </QueryProvider>
+                      </NotificationProvider>
+                    </TabsProvider>
+                  )}
+                >
+                  <Routes />
+                </Dynamic>
+              </ServerScopedProviders>
+            </BrowserServerSyncProvider>
+          </BrowserServerSDKProvider>
+        </BrowserGlobalProvider>
       </ServerProvider>
     </SettingsProvider>
   )
