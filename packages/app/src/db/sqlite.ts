@@ -1,16 +1,16 @@
 /**
  * SQLite WASM + OPFS adapter for browser
- * Uses @sqlite.org/sqlite-wasm with Origin Private File System for persistence
+ * Uses sql.js with Origin Private File System for persistence
  */
 
-type SqliteDatabase = any
-type Sqlite3Static = any
+import initSqlJs, { type Database } from 'sql.js'
 
-let sqlite3Instance: Sqlite3Static | null = null
+type SqliteDatabase = Database
+
 let dbInstance: SqliteDatabase | null = null
 let dbReady: Promise<SqliteDatabase> | null = null
 
-const DB_NAME = '/opencode.sqlite3'
+const DB_NAME = 'opencode.sqlite3'
 
 /**
  * Initialize SQLite with OPFS persistence
@@ -20,21 +20,26 @@ export async function initDatabase(): Promise<SqliteDatabase> {
   if (dbReady) return dbReady
 
   dbReady = (async () => {
-    const sqlite3 = await loadSqlite3()
-    sqlite3Instance = sqlite3
+    const SQL = await initSqlJs({
+      locateFile: (file) => `https://sql.js.org/dist/${file}`,
+    })
 
-    if (sqlite3.oo1.OpfsDb) {
-      const db = new sqlite3.oo1.OpfsDb(DB_NAME, 'ct')
-      dbInstance = db
-      console.log('[SQLite] OPFS database created:', DB_NAME)
+    // Try to load from OPFS
+    let db: SqliteDatabase
+    const data = await loadFromOPFS()
+
+    if (data) {
+      db = new SQL.Database(data)
+      console.log('[SQLite] Loaded database from OPFS')
     } else {
-      console.warn('[SQLite] OPFS not available, using in-memory database')
-      const db = new sqlite3.oo1.DB(':memory:', 'ct')
-      dbInstance = db
+      db = new SQL.Database()
+      console.log('[SQLite] Created new in-memory database')
     }
 
+    dbInstance = db
     await setupPragmas(dbInstance)
     await runMigrations(dbInstance)
+    await saveToOPFS()
 
     return dbInstance
   })()
@@ -43,40 +48,63 @@ export async function initDatabase(): Promise<SqliteDatabase> {
 }
 
 /**
- * Load SQLite3 WASM module
+ * Load database from OPFS
  */
-async function loadSqlite3(): Promise<Sqlite3Static> {
-  if (sqlite3Instance) return sqlite3Instance
+async function loadFromOPFS(): Promise<Uint8Array | null> {
+  try {
+    if (!navigator.storage || !navigator.storage.getDirectory) {
+      return null
+    }
 
-  // Dynamic import of @sqlite.org/sqlite-wasm
-  const sqlite3InitModule = (await import('@sqlite.org/sqlite-wasm')).default
+    const root = await navigator.storage.getDirectory()
+    const fileHandle = await root.getFileHandle(DB_NAME)
+    const file = await fileHandle.getFile()
+    return new Uint8Array(await file.arrayBuffer())
+  } catch {
+    return null
+  }
+}
 
-  return new Promise((resolve, reject) => {
-    sqlite3InitModule({
-      locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@sqlite.org/sqlite-wasm@latest/${file}`,
-    })
-      .then(resolve)
-      .catch(reject)
-  })
+/**
+ * Save database to OPFS
+ */
+async function saveToOPFS(): Promise<void> {
+  try {
+    if (!navigator.storage || !navigator.storage.getDirectory) {
+      console.warn('[SQLite] OPFS not available, database will not persist')
+      return
+    }
+
+    const root = await navigator.storage.getDirectory()
+    const fileHandle = await root.getFileHandle(DB_NAME, { create: true })
+    const writable = await fileHandle.createWritable()
+
+    const data = dbInstance!.export()
+    await writable.write(data)
+    await writable.close()
+
+    console.log('[SQLite] Database saved to OPFS')
+  } catch (error) {
+    console.error('[SQLite] Failed to save to OPFS:', error)
+  }
 }
 
 /**
  * Setup SQLite pragmas for performance
  */
 async function setupPragmas(db: SqliteDatabase): Promise<void> {
-  db.exec('PRAGMA journal_mode = WAL')
-  db.exec('PRAGMA synchronous = NORMAL')
-  db.exec('PRAGMA busy_timeout = 5000')
-  db.exec('PRAGMA cache_size = -64000')
-  db.exec('PRAGMA foreign_keys = ON')
+  db.run('PRAGMA journal_mode = WAL')
+  db.run('PRAGMA synchronous = NORMAL')
+  db.run('PRAGMA busy_timeout = 5000')
+  db.run('PRAGMA cache_size = -64000')
+  db.run('PRAGMA foreign_keys = ON')
 }
 
 /**
  * Run database migrations
  */
 async function runMigrations(db: SqliteDatabase): Promise<void> {
-  // Create tables if they don't exist
-  db.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS session (
       id TEXT PRIMARY KEY,
       slug TEXT NOT NULL,
@@ -102,7 +130,7 @@ async function runMigrations(db: SqliteDatabase): Promise<void> {
     )
   `)
 
-  db.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS message (
       id TEXT PRIMARY KEY,
       session_id TEXT NOT NULL,
@@ -113,7 +141,7 @@ async function runMigrations(db: SqliteDatabase): Promise<void> {
     )
   `)
 
-  db.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS part (
       id TEXT PRIMARY KEY,
       session_id TEXT NOT NULL,
@@ -126,7 +154,7 @@ async function runMigrations(db: SqliteDatabase): Promise<void> {
     )
   `)
 
-  db.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS project (
       id TEXT PRIMARY KEY,
       name TEXT,
@@ -136,7 +164,7 @@ async function runMigrations(db: SqliteDatabase): Promise<void> {
     )
   `)
 
-  db.exec(`
+  db.run(`
     CREATE TABLE IF NOT EXISTS config (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL,
@@ -144,10 +172,9 @@ async function runMigrations(db: SqliteDatabase): Promise<void> {
     )
   `)
 
-  // Create indexes
-  db.exec('CREATE INDEX IF NOT EXISTS idx_message_session ON message(session_id)')
-  db.exec('CREATE INDEX IF NOT EXISTS idx_part_session ON part(session_id)')
-  db.exec('CREATE INDEX IF NOT EXISTS idx_part_message ON part(message_id)')
+  db.run('CREATE INDEX IF NOT EXISTS idx_message_session ON message(session_id)')
+  db.run('CREATE INDEX IF NOT EXISTS idx_part_session ON part(session_id)')
+  db.run('CREATE INDEX IF NOT EXISTS idx_part_message ON part(message_id)')
 }
 
 /**
@@ -165,10 +192,26 @@ export function getDatabase(): SqliteDatabase {
  */
 export function execute(sql: string, params?: any[]): any[] {
   const db = getDatabase()
+
   if (params) {
-    return db.exec({ sql, bind: params, returnValue: 'resultRows' })
+    const stmt = db.prepare(sql)
+    stmt.bind(params)
+
+    const results: any[] = []
+    while (stmt.step()) {
+      results.push(stmt.getAsObject())
+    }
+    stmt.free()
+    return results
   }
-  return db.exec({ sql, returnValue: 'resultRows' })
+
+  const results: any[] = []
+  const stmt = db.prepare(sql)
+  while (stmt.step()) {
+    results.push(stmt.getAsObject())
+  }
+  stmt.free()
+  return results
 }
 
 /**
@@ -176,12 +219,22 @@ export function execute(sql: string, params?: any[]): any[] {
  */
 export function executeInsert(sql: string, params?: any[]): number {
   const db = getDatabase()
+
   if (params) {
-    db.exec({ sql, bind: params })
+    db.run(sql, params)
   } else {
-    db.exec(sql)
+    db.run(sql)
   }
-  return db.exec({ sql: 'SELECT last_insert_rowid() as id', returnValue: 'resultRows' })[0]?.id
+
+  const result = db.exec('SELECT last_insert_rowid() as id')
+  return result[0]?.values[0]?.[0] as number
+}
+
+/**
+ * Save database to OPFS (call after modifications)
+ */
+export async function saveDatabase(): Promise<void> {
+  await saveToOPFS()
 }
 
 /**
@@ -189,6 +242,7 @@ export function executeInsert(sql: string, params?: any[]): number {
  */
 export async function closeDatabase(): Promise<void> {
   if (dbInstance) {
+    await saveToOPFS()
     dbInstance.close()
     dbInstance = null
   }
