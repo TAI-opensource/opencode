@@ -13,6 +13,9 @@ import { dict as en } from "@/i18n/en"
 import { dict as zh } from "@/i18n/zh"
 import { handleNotificationClick } from "@/utils/notification-click"
 import pkg from "../package.json"
+import { initDatabase } from "@/db/sqlite"
+
+initDatabase().catch((err) => console.warn("Database init failed:", err))
 
 const getLocale = () => {
   if (typeof navigator !== "object") return "en" as const
