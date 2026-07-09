@@ -21,7 +21,7 @@ export async function initDatabase(): Promise<SqliteDatabase> {
 
   dbReady = (async () => {
     const SQL = await initSqlJs({
-      locateFile: (file) => `https://sql.js.org/dist/${file}`,
+      locateFile: (file) => `/assets/${file}`,
     })
 
     // Try to load from OPFS
