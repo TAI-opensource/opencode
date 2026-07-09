@@ -158,10 +158,10 @@ export function AppInterface(props: {
         <BrowserGlobalProvider>
           <BrowserServerSDKProvider>
             <BrowserServerSyncProvider>
-              <ServerScopedProviders>
-                <Dynamic
-                  component={props.router ?? Router}
-                  root={(routerProps) => (
+              <Dynamic
+                component={props.router ?? Router}
+                root={(routerProps) => (
+                  <ServerScopedProviders>
                     <TabsProvider>
                       <NotificationProvider>
                         <QueryProvider>
@@ -169,11 +169,11 @@ export function AppInterface(props: {
                         </QueryProvider>
                       </NotificationProvider>
                     </TabsProvider>
-                  )}
-                >
-                  <Routes />
-                </Dynamic>
-              </ServerScopedProviders>
+                  </ServerScopedProviders>
+                )}
+              >
+                <Routes />
+              </Dynamic>
             </BrowserServerSyncProvider>
           </BrowserServerSDKProvider>
         </BrowserGlobalProvider>
