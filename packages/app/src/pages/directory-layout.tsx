@@ -124,7 +124,7 @@ export default function Layout(props: ParentProps) {
           fallback={
             <BrowserSDKProvider directory={resolved}>
               <BrowserModelsProvider>
-                <DirectoryDataProvider directory={resolved}>{props.children}</DirectoryDataProvider>
+                {props.children}
               </BrowserModelsProvider>
             </BrowserSDKProvider>
           }
