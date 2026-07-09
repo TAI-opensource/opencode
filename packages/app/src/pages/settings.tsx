@@ -4,7 +4,7 @@
 
 import { createSignal, For, onMount, createEffect } from 'solid-js'
 import { useNavigate } from '@solidjs/router'
-import { ConfigRepository } from './db'
+import { ConfigRepository } from '@/db'
 
 interface ProviderConfig {
   name: string
