@@ -14,6 +14,7 @@ import { sessionHref } from "@/utils/session-route"
 import { useServerSync } from "@/context/server-sync"
 import { useServer } from "@/context/server"
 import { BrowserSDKProvider } from "@/context/browser-sdk"
+import { BrowserModelsProvider } from "@/context/browser-models"
 
 export function DirectoryDataProvider(
   props: ParentProps<{
@@ -122,7 +123,9 @@ export default function Layout(props: ParentProps) {
           when={!isBrowserOnly()}
           fallback={
             <BrowserSDKProvider directory={resolved}>
-              <DirectoryDataProvider directory={resolved}>{props.children}</DirectoryDataProvider>
+              <BrowserModelsProvider>
+                <DirectoryDataProvider directory={resolved}>{props.children}</DirectoryDataProvider>
+              </BrowserModelsProvider>
             </BrowserSDKProvider>
           }
         >

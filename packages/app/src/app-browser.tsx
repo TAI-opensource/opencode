@@ -161,15 +161,13 @@ export function AppInterface(props: {
               <Dynamic
                 component={props.router ?? Router}
                 root={(routerProps) => (
-                  <ServerScopedProviders>
-                    <TabsProvider>
-                      <NotificationProvider>
-                        <QueryProvider>
-                          <SharedProviders>{routerProps.children}</SharedProviders>
-                        </QueryProvider>
-                      </NotificationProvider>
-                    </TabsProvider>
-                  </ServerScopedProviders>
+                  <TabsProvider>
+                    <NotificationProvider>
+                      <QueryProvider>
+                        <SharedProviders>{routerProps.children}</SharedProviders>
+                      </QueryProvider>
+                    </NotificationProvider>
+                  </TabsProvider>
                 )}
               >
                 <Routes />
