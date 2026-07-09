@@ -53,7 +53,7 @@ const clone = (value: State | undefined) => {
   } satisfies State
 }
 
-export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
+export const { use: _useLocalOriginal, provider: LocalProvider } = createSimpleContext({
   name: "Local",
   init: () => {
     const params = useParams()
@@ -409,3 +409,31 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
     return result
   },
 })
+
+function createBrowserFallbackLocal() {
+  const noop = () => {}
+  const agent = { set: noop, current: () => undefined }
+  const model = { set: noop, current: () => undefined, recent: { list: () => [], push: noop }, variant: { set: noop } }
+  return {
+    ready: { promise: Promise.resolve(), resolved: true } as any,
+    directory: "",
+    id: () => undefined,
+    list: () => [] as any[],
+    connected: () => new Set<string>(),
+    agent,
+    model,
+    session: {
+      handoff: () => undefined,
+      state: () => ({}),
+      create: async () => undefined,
+    },
+  } as any
+}
+
+export function useLocal() {
+  try {
+    return _useLocalOriginal()
+  } catch {
+    return createBrowserFallbackLocal()
+  }
+}

@@ -114,6 +114,8 @@ function createBrowserFallbackSync() {
     data: {
       path: { directory: "" },
       session: { list: [], map: {} },
+      agent: [],
+      project: [],
     },
     session: {
       sync: async () => {},

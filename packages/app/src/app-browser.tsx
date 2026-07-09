@@ -45,6 +45,7 @@ import NewLayout from "@/pages/layout-new"
 import { ErrorPage } from "./pages/error"
 import SettingsPage from "@/pages/settings"
 import { SessionPage, SessionRouteErrorBoundary } from "@/pages/session"
+import { BrowserSessionPage } from "@/pages/browser-session"
 import { NewHome, LegacyHome } from "@/pages/home"
 import { I18nProvider as UiI18nProvider } from "@opencode-ai/ui/context"
 
@@ -184,7 +185,7 @@ const SessionRoute = () => {
   const params = useParams()
   return (
     <SessionRouteErrorBoundary sessionID={params.id}>
-      <SessionPage />
+      <BrowserSessionPage />
     </SessionRouteErrorBoundary>
   )
 }
