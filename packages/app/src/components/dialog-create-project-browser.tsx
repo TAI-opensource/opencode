@@ -147,7 +147,7 @@ export function DialogCreateProject(props: DialogCreateProjectProps) {
               <Show when={directories().length === 0 && !error()}>
                 <div class="p-2 text-gray-500 text-sm">No subdirectories</div>
               </Show>
-            </For>
+            </Show>
           </div>
         </div>
 
