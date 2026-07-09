@@ -22,7 +22,7 @@ function modelKey(model: ModelKey) {
   return `${model.providerID}:${model.modelID}`
 }
 
-export const { use: useModels, provider: ModelsProvider } = createSimpleContext({
+export const { use: _useModelsOriginal, provider: ModelsProvider } = createSimpleContext({
   name: "Models",
   gate: false,
   init: (props: { directory?: Accessor<string | undefined> } = {}) => {
@@ -171,3 +171,24 @@ export const { use: useModels, provider: ModelsProvider } = createSimpleContext(
     }
   },
 })
+
+// Browser-only fallback when the real Models context is not available
+function createBrowserFallbackModels() {
+  return {
+    ready: { promise: Promise.resolve(), resolved: true } as any,
+    list: () => [] as any[],
+    find: () => undefined,
+    visible: () => true,
+    setVisibility: () => {},
+    recent: { list: () => [] as any[], push: () => {} },
+    variant: { get: () => undefined, set: () => {} },
+  }
+}
+
+export function useModels() {
+  try {
+    return _useModelsOriginal()
+  } catch {
+    return createBrowserFallbackModels()
+  }
+}
