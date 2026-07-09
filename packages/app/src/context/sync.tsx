@@ -1,5 +1,5 @@
 import { Binary } from "@opencode-ai/core/util/binary"
-import { createMemo } from "solid-js"
+import { createMemo, createSignal } from "solid-js"
 import { useServerSync } from "./server-sync"
 import { useSDK } from "./sdk"
 import type { Message, Part } from "@opencode-ai/sdk/v2/client"
@@ -109,11 +109,32 @@ export function applyOptimisticRemove(draft: OptimisticStore, input: OptimisticR
   delete draft.part[input.messageID]
 }
 
-export const useSync = () => {
-  const serverSync = useServerSync()
-  const sdk = useSDK()
+function createBrowserFallbackSync() {
+  const emptySync = {
+    data: {
+      path: { directory: "" },
+      session: { list: [], map: {} },
+    },
+    session: {
+      sync: async () => {},
+      list: () => [],
+      get: () => undefined,
+    },
+    part: { list: () => [], get: () => undefined },
+    message: { list: () => [], get: () => undefined },
+  } as any
+  const [signal] = createSignal(emptySync)
+  return signal
+}
 
-  return createMemo(() => serverSync().ensureDirSyncContext(sdk().directory))
+export const useSync = () => {
+  try {
+    const serverSync = useServerSync()
+    const sdk = useSDK()
+    return createMemo(() => serverSync().ensureDirSyncContext(sdk().directory))
+  } catch {
+    return createBrowserFallbackSync()
+  }
 }
 
 export type DirectorySync = ReturnType<ReturnType<typeof useSync>>
