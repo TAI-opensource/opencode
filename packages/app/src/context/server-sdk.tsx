@@ -291,7 +291,7 @@ export function createServerSdkContext(server: ServerConnection.Any, scope: Serv
   })
 }
 
-export const { use: useServerSDK, provider: ServerSDKProvider } = createSimpleContext({
+export const { use: _useServerSDKOriginal, provider: ServerSDKProvider } = createSimpleContext({
   name: "ServerSDK",
   // Returns an accessor so the resolved server can change reactively (e.g. a
   // /new-session draft retargeting its server) without re-instantiating the subtree.
@@ -307,6 +307,44 @@ export const { use: useServerSDK, provider: ServerSDKProvider } = createSimpleCo
     })
   },
 })
+
+// Browser-only fallback when the real ServerSDK context is not available
+function createBrowserFallbackSDK() {
+  const BROWSER_SERVER: ServerConnection.Http = {
+    type: "http",
+    http: { url: "browser-only" },
+    displayName: "Browser",
+  }
+  const sdk: ServerSDK = {
+    server: BROWSER_SERVER,
+    scope: "browser-only" as any,
+    url: "browser-only",
+    client: {} as any,
+    event: {
+      on: () => () => {},
+      listen: () => () => {},
+      start: async () => {},
+    },
+    createClient: () => sdk as any,
+    ensureDirSdkContext: (directory: string) => ({
+      scope: "browser-only" as any,
+      directory,
+      client: {} as any,
+      event: { on: () => () => {}, emit: () => {} },
+      get url() { return "browser-only" },
+      createClient: () => ({}) as any,
+    }),
+  }
+  return createMemo(() => sdk)
+}
+
+export function useServerSDK() {
+  try {
+    return _useServerSDKOriginal()
+  } catch {
+    return createBrowserFallbackSDK()
+  }
+}
 
 type SDKEventMap = {
   [key in Event["type"]]: Extract<Event, { type: key }>

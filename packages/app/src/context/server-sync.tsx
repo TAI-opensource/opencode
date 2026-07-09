@@ -525,7 +525,7 @@ export function createServerSyncContext(serverSDK: ServerSDK) {
 
 export type ServerSync = ReturnType<typeof createServerSyncContext>
 
-export const { use: useServerSync, provider: ServerSyncProvider } = createSimpleContext({
+export const { use: _useServerSyncOriginal, provider: ServerSyncProvider } = createSimpleContext({
   name: "ServerSync",
   // Returns an accessor so the resolved server can change reactively without
   // re-instantiating the subtree (mirrors useServerSDK).
@@ -541,6 +541,95 @@ export const { use: useServerSync, provider: ServerSyncProvider } = createSimple
     })
   },
 })
+
+// Browser-only fallback when the real ServerSync context is not available
+function createBrowserFallbackSync() {
+  const [childStore] = createStore({
+    session: [] as any[],
+    project: undefined as string | undefined,
+    icon: undefined as string | undefined,
+    limit: 20,
+    status: "ready" as string,
+    path: { directory: "/", worktree: "/", home: "/", state: "/", config: "/" },
+    mcp: {} as Record<string, any>,
+    command: [] as any[],
+    provider: { all: new Map(), connected: [] as any[], default: {} },
+    config: {} as any,
+  })
+  const setChildStore = (() => {}) as any
+
+  const sync = {
+    data: {
+      ready: true,
+      path: { home: "/", directory: "/", worktree: "/", state: "/", config: "/" },
+      project: [] as any[],
+      provider: { all: new Map(), connected: [] as any[], default: {} },
+      config: {},
+      reload: undefined as undefined | "pending" | "complete",
+    },
+    set: (() => {}) as any,
+    get ready() { return true },
+    get error() { return undefined },
+    child: (_dir: string, _opts?: any) => [childStore, setChildStore] as const,
+    peek: (_dir: string) => [childStore, setChildStore] as const,
+    disableMcp: () => {},
+    queryOptions: {
+      globalConfig: () => ({ queryKey: ["browser", "globalConfig"] as const, queryFn: async () => ({}) }),
+      projects: () => ({ queryKey: ["browser", "projects"] as const, queryFn: async () => [] }),
+      providers: () => ({ queryKey: ["browser", null, "providers"] as const, queryFn: async () => ({ all: new Map(), connected: [], default: {} }) }),
+      path: () => ({ queryKey: ["browser", null, "path"] as const, queryFn: async () => ({ home: "/", directory: "/", worktree: "/", state: "/", config: "/" }) }),
+      agents: () => ({ queryKey: ["browser", "agents"] as const, queryFn: async () => [] }),
+      references: () => ({ queryKey: ["browser", "references"] as const, queryFn: async () => [] }),
+      mcp: () => ({ queryKey: ["browser", "mcp"] as const, queryFn: async () => ({}) }),
+      mcpResources: () => ({ queryKey: ["browser", "mcpResources"] as const, queryFn: async () => ({}) }),
+      lsp: () => ({ queryKey: ["browser", "lsp"] as const, queryFn: async () => [] }),
+      sessions: () => ({ queryKey: ["browser", "sessions"] as const }),
+    },
+    updateConfig: async () => {},
+    project: { loadSessions: async () => {}, meta: () => {}, icon: () => {} },
+    session: {
+      data: { permission: [] as any[], session_status: {} as Record<string, any>, session_working: () => false, message: {} as Record<string, any[]>, part: {} as Record<string, any[]> },
+      set: (() => {}) as any,
+      get: () => undefined,
+      peek: () => undefined,
+      remember: () => {},
+      resolve: async () => undefined as any,
+      sync: async () => {},
+      prefetch: () => {},
+      shouldPrefetch: () => false,
+      fresh: () => true,
+      evict: () => {},
+      pin: () => {},
+      unpin: () => {},
+      diff: async () => undefined,
+      todo: async () => undefined,
+      history: { more: () => false, loading: () => false, loadMore: async () => {} },
+      optimistic: { add: () => {}, remove: () => {} },
+      lineage: undefined,
+    },
+    mcp: { toggle: async () => {} },
+    ensureDirSyncContext: (directory: string) => ({
+      data: new Proxy({} as any, { get: (_t, prop) => (childStore as any)[prop] }),
+      set: (() => {}) as any,
+      get status() { return childStore.status },
+      get ready() { return true },
+      get project() { return undefined },
+      session: { remember: () => {}, get: () => undefined, optimistic: { add: () => {}, remove: () => {} }, addOptimisticMessage: () => {}, sync: async () => {}, diff: async () => undefined, todo: async () => undefined, history: { more: () => false, loading: () => false, loadMore: async () => {} }, evict: () => {}, fetch: async () => {}, more: { current: false } as any, archive: async () => {} },
+      mcp: { toggle: async () => {} },
+      absolute: (path: string) => path,
+      get directory() { return directory },
+    }),
+  } as any
+  return createMemo(() => sync)
+}
+
+export function useServerSync() {
+  try {
+    return _useServerSyncOriginal()
+  } catch {
+    return createBrowserFallbackSync()
+  }
+}
 
 export function useQueryOptions() {
   const sync = useServerSync()
