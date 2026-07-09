@@ -40,6 +40,9 @@ export default defineConfig({
       "@": "/src",
     },
   },
+  worker: {
+    format: "es",
+  },
   optimizeDeps: {
     exclude: ["@sqlite.org/sqlite-wasm"],
   },
