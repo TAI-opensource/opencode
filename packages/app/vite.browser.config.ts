@@ -1,6 +1,7 @@
 import { sentryVitePlugin } from "@sentry/vite-plugin"
 import { defineConfig } from "vite"
 import solidPlugin from "vite-plugin-solid"
+import tailwindcss from "@tailwindcss/vite"
 
 const sentry =
   process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT
@@ -20,7 +21,7 @@ const sentry =
     : false
 
 export default defineConfig({
-  plugins: [solidPlugin(), sentry] as any,
+  plugins: [tailwindcss(), solidPlugin(), sentry] as any,
   server: {
     host: "0.0.0.0",
     allowedHosts: true,
