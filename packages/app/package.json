@@ -18,7 +18,7 @@
     "dev": "vite",
     "dev:browser": "vite --config vite.browser.config.ts",
     "build": "vite build",
-    "build:browser": "vite build --config vite.browser.config.ts",
+    "build:browser": "vite build --config vite.browser.config.ts && cp dist/index-browser.html dist/index.html",
     "serve": "vite preview",
     "test": "bun run test:unit && bun run test:browser",
     "test:unit": "bun test --only-failures --preload ./happydom.ts ./src",
