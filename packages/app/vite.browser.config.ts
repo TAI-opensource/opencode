@@ -31,7 +31,7 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       input: {
-        main: "index.html",
+        main: "index-browser.html",
       },
     },
   },
