@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: opencode-backend
+    runtime: node
+    plan: free
+    buildCommand: bun install
+    startCommand: cd packages/opencode && bun run --conditions=browser ./src/index.ts web --hostname 0.0.0.0 --port $PORT
+    envVars:
+      - key: OPENCODE_SERVER_PASSWORD
+        generateValue: true
+      - key: NODE_ENV
+        value: production
