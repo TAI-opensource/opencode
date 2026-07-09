@@ -97,7 +97,9 @@ export default function Layout(props: ParentProps) {
     return decodeDirectory(params.dir) ?? ""
   })
 
-  const isBrowserOnly = createMemo(() => true)
+  const isBrowserOnly = createMemo(() => {
+    return ServerConnection.browserOnly(server.current) || server.key === "browser-only"
+  })
 
   createEffect(() => {
     const dir = params.dir
