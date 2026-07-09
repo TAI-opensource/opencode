@@ -12,6 +12,8 @@ import { Schema } from "effect"
 import type { ServerConnection } from "@/context/server"
 import { sessionHref } from "@/utils/session-route"
 import { useServerSync } from "@/context/server-sync"
+import { useServer } from "@/context/server"
+import { BrowserSDKProvider } from "@/context/browser-sdk"
 
 export function DirectoryDataProvider(
   props: ParentProps<{
@@ -86,12 +88,15 @@ export default function Layout(props: ParentProps) {
   const params = useParams()
   const language = useLanguage()
   const navigate = useNavigate()
+  const server = useServer()
   let invalid = ""
 
   const resolved = createMemo(() => {
     if (!params.dir) return ""
     return decodeDirectory(params.dir) ?? ""
   })
+
+  const isBrowserOnly = createMemo(() => ServerConnection.browserOnly(server.current))
 
   createEffect(() => {
     const dir = params.dir
@@ -113,9 +118,18 @@ export default function Layout(props: ParentProps) {
   return (
     <Show when={resolved()} keyed>
       {(resolved) => (
-        <SDKProvider directory={resolved}>
-          <DirectoryDataProvider directory={resolved}>{props.children}</DirectoryDataProvider>
-        </SDKProvider>
+        <Show
+          when={!isBrowserOnly()}
+          fallback={
+            <BrowserSDKProvider directory={resolved}>
+              <DirectoryDataProvider directory={resolved}>{props.children}</DirectoryDataProvider>
+            </BrowserSDKProvider>
+          }
+        >
+          <SDKProvider directory={resolved}>
+            <DirectoryDataProvider directory={resolved}>{props.children}</DirectoryDataProvider>
+          </SDKProvider>
+        </Show>
       )}
     </Show>
   )
