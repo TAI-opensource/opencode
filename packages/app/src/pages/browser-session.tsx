@@ -72,6 +72,22 @@ export function BrowserSessionPage() {
 
   return (
     <div class="flex flex-col h-full bg-zinc-950 text-zinc-100">
+      <div class="flex items-center justify-between border-b border-zinc-800 px-4 py-2">
+        <div class="flex items-center gap-2">
+          <a href="/" class="text-zinc-400 hover:text-zinc-200 text-sm transition-colors">Home</a>
+          <span class="text-zinc-600">/</span>
+          <span class="text-zinc-300 text-sm truncate max-w-[200px]">{sdk().directory}</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-xs text-zinc-500">Session: {sessionID() || "new"}</span>
+          <a
+            href="/settings"
+            class="text-zinc-400 hover:text-zinc-200 text-sm transition-colors"
+          >
+            Settings
+          </a>
+        </div>
+      </div>
       <div class="flex-1 overflow-y-auto p-4">
         <Show when={messages().length > 0} fallback={
           <div class="flex items-center justify-center h-full text-zinc-500 text-sm">
