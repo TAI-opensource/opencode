@@ -240,6 +240,8 @@ export namespace ServerConnection {
   export const builtin = (conn: Any) => conn.type === "sidecar" && conn.variant === "base"
   export const local = (conn?: Any) =>
     !!conn && (builtin(conn) || (conn.type === "http" && isLocalHost(conn.http.url) === "local"))
+  export const browserOnly = (conn?: Any) =>
+    !!conn && conn.type === "http" && conn.http.url === "browser-only"
 }
 
 export function nextServerAfterRemoval(

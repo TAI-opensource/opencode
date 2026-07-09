@@ -72,6 +72,10 @@ export async function checkServerHealth(
   fetch: typeof globalThis.fetch,
   opts?: CheckServerHealthOptions,
 ): Promise<ServerHealth> {
+  // Browser-only mode: always healthy
+  if (server.url === "browser-only") {
+    return { healthy: true, version: "browser" }
+  }
   const timeout = opts?.signal ? undefined : timeoutSignal(opts?.timeoutMs ?? defaultTimeoutMs)
   const signal = opts?.signal ?? timeout?.signal
   const retryCount = opts?.retryCount ?? defaultRetryCount
