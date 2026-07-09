@@ -28,7 +28,7 @@ import { FileProvider } from "@/context/file"
 import { HighlightsProvider } from "@/context/highlights"
 import { LanguageProvider, type Locale, useLanguage } from "@/context/language"
 import { LayoutProvider } from "@/context/layout"
-import { ModelsProvider } from "@/context/models"
+import { BrowserModelsProvider } from "@/context/browser-models"
 import { NotificationProvider } from "@/context/notification"
 import { PermissionProvider } from "@/context/permission"
 import { PromptProvider } from "@/context/prompt"
@@ -96,7 +96,7 @@ function ServerScopedProviders(props: ParentProps) {
   return (
     <PermissionProvider>
       <LayoutProvider>
-        <ModelsProvider>{props.children}</ModelsProvider>
+        <BrowserModelsProvider>{props.children}</BrowserModelsProvider>
       </LayoutProvider>
     </PermissionProvider>
   )
