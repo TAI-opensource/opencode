@@ -98,8 +98,7 @@ export default function Layout(props: ParentProps) {
   })
 
   const isBrowserOnly = createMemo(() => {
-    const conn = server.list.find((s) => ServerConnection.key(s) === server.current)
-    return conn ? ServerConnection.browserOnly(conn) : false
+    return server.list.some((s) => ServerConnection.browserOnly(s))
   })
 
   createEffect(() => {
